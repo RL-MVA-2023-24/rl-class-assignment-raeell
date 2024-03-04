@@ -58,7 +58,8 @@ class ProjectAgent:
                 'update_target_strategy': 'ema', # 'replace' or 'ema'
                 'update_target_freq': 100, # set between 10 and 1000
                 'update_target_tau': 0.001,
-                'criterion': torch.nn.SmoothL1Loss()
+                'criterion': torch.nn.SmoothL1Loss(),
+                'state_dim': env.observation_space.shape[0],
         }
 
         # self.device = "cuda" if next(self.policy.parameters()).is_cuda else "cpu"
@@ -100,8 +101,8 @@ class ProjectAgent:
 
 
         # Best policy obtained by making a lot of different models vote
-        self.voting = True
-        self.model_512_path = "./best_models_512"
+        self.vote = True
+        self.model_512_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'best_models_512')
         self.models_512 = []
 
 
@@ -113,7 +114,7 @@ class ProjectAgent:
         
     def greedy_action_vote(self, state):
         device = self.device
-        votes = np.zeros(self.nb_actions)
+        votes = torch.zeros(self.nb_actions)
         with torch.no_grad():
             for model in self.models_512:
                 Q = model(torch.Tensor(state).unsqueeze(0).to(device))
@@ -205,7 +206,7 @@ class ProjectAgent:
         self.model.to(self.device)
 
     def load(self):
-        if self.voting:
+        if self.vote:
             for file in os.listdir(self.model_512_path):
                 DQN = torch.nn.Sequential(nn.Linear(self.state_dim, 512),
                                     nn.ReLU(),
@@ -215,9 +216,10 @@ class ProjectAgent:
                                     nn.ReLU(),
                                     nn.Linear(512, 512),
                                     nn.ReLU(),
+                                    nn.Linear(512, 512),
+                                    nn.ReLU(),
                                     nn.Linear(512, self.nb_actions)).to(device)
                 DQN.load_state_dict(torch.load(os.path.join(self.model_512_path, file), map_location=self.device))
                 self.models_512.append(DQN)
         else:
             self.model.load_state_dict(torch.load(self.model_path, map_location=self.device))
-
