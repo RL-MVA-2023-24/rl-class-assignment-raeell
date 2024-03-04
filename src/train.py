@@ -64,7 +64,7 @@ class ProjectAgent:
         # self.device = "cuda" if next(self.policy.parameters()).is_cuda else "cpu"
         # for github grading use cpu
         self.device = "cpu"
-        self.scalar_dtype = next(self.policy.parameters()).dtype
+        # self.scalar_dtype = next(self.policy.parameters()).dtype
         self.nb_actions = config['nb_actions']
         self.gamma = config['gamma'] if 'gamma' in config.keys() else 0.98
         self.batch_size = config['batch_size'] if 'batch_size' in config.keys() else 100
